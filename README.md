@@ -11,8 +11,7 @@ Installation
 ---
 **1.** Clone this repo in any directory
 
-
-    git clone ...
+    git clone https://github.com/BowlOfSoup/doc.git
 
 **2.** Add the doc directory to your path
 
