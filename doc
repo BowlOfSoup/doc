@@ -1,0 +1,62 @@
+#!/bin/bash
+
+function route() {
+    ##
+    # Holds the full path of this script
+    ##
+    local -r scriptPath="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+    while getopts ":-help:c:d" opt; do
+        case $opt in
+        h)
+          outputUsage
+
+          exit 0;
+          ;;
+        c)
+          source "${scriptPath}/docker-compose.sh"
+          dockerComposeMain "$@"
+
+          exit 0;
+          ;;
+        d)
+          source "${scriptPath}/docker.sh"
+          dockerMain "$@"
+
+          exit 0;
+          ;;
+        *)
+          outputUsage
+
+          exit 0;
+          ;;
+        esac
+    done
+
+    outputUsage;
+}
+
+function outputUsage() {
+  source "${scriptPath}/helper/output.sh"
+  outputInfo "\ndoc. A helper for managing your development setup"
+
+  cat <<EOF
+Usage:
+    -h          This help text
+    -d          Switch for docker helper functions
+    -d help     Help text for the docker helper functions
+    -c          Run docker-compose command for a specified directory
+    -c help     Help text for the docker-compose helper functions
+    -c list     List available directories to be used with the -c flag
+
+Examples:
+    $ doc -d help
+    $ doc -d clean
+
+    $ doc -c help
+    $ doc -c [directory] [command]
+
+EOF
+}
+
+route "$@"
