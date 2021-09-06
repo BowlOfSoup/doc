@@ -32,6 +32,7 @@ for Zsh:
 
 `config.ini` contains the following variables:
 - **dockerDirectory**: path to a directory which contains directories with docker stacks/projects which should contain a `docker-compose.yml`.
+You can indicate multiple root directories with the `;` separator.
 
 Usage
 ---
