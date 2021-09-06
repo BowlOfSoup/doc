@@ -11,6 +11,7 @@ function dockerComposeMain() {
   ##
   function construct() {
     source "${scriptPath}/helper/output.sh"
+    source "${scriptPath}/helper/diskHelper.sh"
   }
 
   ##
@@ -20,9 +21,6 @@ function dockerComposeMain() {
   ##
   function execute() {
     case ${2} in
-    test)
-      echo "${2}"
-      ;;
     help)
       outputUsage
       ;;
@@ -39,9 +37,13 @@ function dockerComposeMain() {
   # @param string "Directory action"
   ##
   function directoryActions() {
+    local dockerPaths
     # shellcheck disable=SC2006
-    # shellcheck disable=SC2155
-    local dockerPath=`readConfig "dockerDirectory"`
+    dockerPaths=`readConfig "dockerDirectory"`
+
+    local dockerDirectories
+    dockerDirectories=$(echo "${dockerPaths}" | tr ";" "\n")
+    directoryCheck "${dockerDirectories}"
 
     local parameters=[]
     read -ra parameters <<<"$@"
@@ -52,10 +54,20 @@ function dockerComposeMain() {
 
     local directory=${parameters[1]}
     unset "parameters[1]"
-    local workingPath="${dockerPath}/${directory}"
+
+    # set workingPath based on directory parameter and matching Docker directory.
+    local workingPath
+    for dockerDirectory in ${dockerDirectories}
+    do
+        if isDirectory "${dockerDirectory}/${directory}"; then
+          workingPath="${dockerDirectory}/${directory}"
+
+          break;
+        fi
+    done
+    validateWorkingPath "${workingPath}"
 
     local action=${parameters[2]}
-
     case ${action} in
       down)
         dockerSync "${workingPath}" "stop"
@@ -126,11 +138,13 @@ function dockerComposeMain() {
       list)
         outputInfo "... listing all directories"
 
-        for dir in "${dockerPath}"/*/; do
-          if [ ! -f "${dir}docker-compose.yml" ]; then continue; fi
+        for dockerDirectory in ${dockerDirectories}; do
+          for dir in "${dockerDirectory}"/*/; do
+            if [ ! -f "${dir}docker-compose.yml" ]; then continue; fi
 
-          IFS='/' read -ra splitDir <<< "$dir"
-          echo -e "- ${splitDir[${#splitDir[@]}-1]}"
+            IFS='/' read -ra splitDir <<< "$dir"
+            echo -e "- ${splitDir[${#splitDir[@]}-1]}"
+          done
         done
 
         outputInfo "\nYou can use the above directories with: doc -c [directory] [action]"
@@ -170,8 +184,39 @@ function dockerComposeMain() {
   #
   # @param string
   ##
-  readConfig() {
+  function readConfig() {
     sed -n 's/.*'"${1}"' *= *\([^ ]*.*\)/\1/p' < "${scriptPath}/config.ini"
+  }
+
+  ##
+  # Check if an array of directories exist.
+  #
+  # @param string
+  ##
+  function directoryCheck() {
+      for directory in ${1}; do
+          if ! isDirectory "${directory}"; then
+            outputLine
+            outputError "\"${directory}\" does not exist. Check your config.ini."
+
+            exit 1;
+          fi
+      done
+  }
+
+  function validateWorkingPath() {
+    if [ -z "${1}" ]; then
+      outputLine
+      outputError "No valid directory given."
+
+      exit 1;
+    fi
+    if ! fileExists "${1}/docker-compose.yml"; then
+      outputLine
+      outputError "Not a valid Docker directory: \"${1}/docker-compose.yml\" does not exist."
+
+      exit 1;
+    fi
   }
 
   ##
