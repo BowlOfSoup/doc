@@ -68,6 +68,7 @@ function dockerComposeMain() {
     validateWorkingPath "${workingPath}"
 
     local action=${parameters[2]}
+    unset "parameters[2]"
     case ${action} in
       down)
         dockerSync "${workingPath}" "stop"
@@ -120,6 +121,9 @@ function dockerComposeMain() {
         dockerSync "${workingPath}" "start"
         dockerCompose "$workingPath" "start"
       ;;
+      exec)
+        dockerCompose "${workingPath}" "exec" "${parameters[@]}"
+      ;;
       *)
         outputUsage
       ;;
@@ -170,13 +174,15 @@ function dockerComposeMain() {
   #
   # @param string "docker-compose directory"
   # @param string "docker-compose command"
+  # @param string "[optional] docker container (when exec)"
+  # @param string "[optional] docker container command (when exec)"
   ##
   function dockerCompose() {
       local projectDirParam="--project-directory ${1}"
       local configFileParam="-f ${1}/docker-compose.yml"
 
       # shellcheck disable=SC2086
-      docker-compose ${projectDirParam} ${configFileParam} ${2}
+      docker-compose ${projectDirParam} ${configFileParam} ${2} ${3} ${4}
   }
 
   ##
@@ -237,11 +243,14 @@ Usage: doc -c [directory] [action]
     [directory] engage        Combine a 'build' and an 'up'
     [directory] stop          Stop a stack (put in sleep mode)
     [directory] start         Start a stack (after it was stopped)
+    [directory] exec          Execute a command for a given container (see example)
 
 Example:
     $ doc -c localdb up
     $ doc -c localdb down
     'localdb' points to a directory in your Docker development directory, configured in config.ini
+
+    $ doc -c symfony-project-dir exec bin/console debug:router
 
 EOF
 
