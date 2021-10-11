@@ -182,7 +182,8 @@ function dockerComposeMain() {
       local configFileParam="-f ${1}/docker-compose.yml"
 
       # shellcheck disable=SC2086
-      docker-compose ${projectDirParam} ${configFileParam} ${2} ${3} ${4}
+      # todo: Don't pass all params manually
+      docker-compose ${projectDirParam} ${configFileParam} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10} ${11} ${12} ${13}
   }
 
   ##
